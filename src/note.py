@@ -5,7 +5,8 @@ BoundingBox = TypeVar('BoundingBox')
 note_step = 0.0625
 
 # TODO: ENUM
-note_types = {
+# TODO: 0 to c4
+note_pitch = {
      -4 : ('g5', 79),
      -3 : ('f5', 77),
      -2 : ('e5', 76),
