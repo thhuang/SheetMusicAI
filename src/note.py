@@ -1,40 +1,30 @@
+from note_utils import NOTE_DIC, NoteLength, Pitch
 from typing import TypeVar
 BoundingBox = TypeVar('BoundingBox')
 
 # TODO: DRY
-note_step = 0.0625
-
-# TODO: ENUM
-# TODO: 0 to c4
-note_pitch = {
-     -4 : ('g5', 79),
-     -3 : ('f5', 77),
-     -2 : ('e5', 76),
-     -1 : ('d5', 74),
-      0 : ('c5', 72),
-      1 : ('b4', 71),
-      2 : ('a4', 69),
-      3 : ('g4', 67),
-      4 : ('f4', 65),
-      5 : ('e4', 64),
-      6 : ('d4', 62),
-      7 : ('c4', 60),
-      8 : ('b3', 59),
-      9 : ('a3', 57),
-     10 : ('g3', 55),
-     11 : ('f3', 53),
-     12 : ('e3', 52),
-     13 : ('d3', 50),
-     14 : ('c3', 48),
-     15 : ('b2', 47),
-     16 : ('a2', 45),
-     17 : ('f2', 53),
-}
+STAFF_SCALE = 0.0625
 
 class Note:
-    def __init__(self, box: BoundingBox, staff_box: BoundingBox):
+    def __init__(self, length: NoteLength, box: BoundingBox, staff_box: BoundingBox) -> None:
         self._box = box
+        self._length = length
+        self._x, self._y = self._box.center  # TODO: check all types of note
+        self._pitch_height = staff_box.h / 16  # TODO: confirm
+        self._pitch = NOTE_DIC[int(round((staff_box.center[1] - self._y) / self._pitch_height))]
         
-        # TODO: check all types of note
-        center_y = self._box.center[1]
-        
+    @property
+    def x(self) -> float:
+        return self._x
+
+    @property
+    def y(self) -> float:
+        return self._y
+
+    @property
+    def length(self) -> NoteLength:
+        return self._length
+    
+    @property
+    def pitch(self) -> Pitch:
+        return self._pitch

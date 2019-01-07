@@ -30,7 +30,7 @@ class BoundingBox:
         return self._h
     
     @property
-    def center(self) -> float:
+    def center(self) -> np.ndarray:
         return self._center
 
     def iou(self, other: BoundingBox) -> float:

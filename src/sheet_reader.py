@@ -1,7 +1,9 @@
 import argparse
 import cv2
+from midiutil.MidiFile import MIDIFile
 from utils import open_file, load_imgs, draw_boxes
 from detector import Detector
+from note import Note, NoteLength
 
 class SheetReader:
     def __init__(self, input: str) -> None:
@@ -10,15 +12,16 @@ class SheetReader:
         self._start_size = 0.5  # TODO: DRY
         self._stop_size = 0.9   # TODO: DRY
         self._threshold_staff = 0.87  # TODO: DRY
-        self._threshold_sharp_sign = 0.75  # TODO: DRY
-        self._threshold_flat_sign = 0.75  # TODO: DRY
-        self._threshold_natural_sign = 0.75  # TODO: DRY
-        self._threshold_quarter_note = 0.75  # TODO: DRY
-        self._threshold_half_note = 0.75  # TODO: DRY
-        self._threshold_whole_note = 0.75  # TODO: DRY
+        self._threshold_sharp_sign = 0.73  # TODO: DRY
+        self._threshold_flat_sign = 0.73  # TODO: DRY
+        self._threshold_natural_sign = 0.73  # TODO: DRY
+        self._threshold_quarter_note = 0.73  # TODO: DRY
+        self._threshold_half_note = 0.73  # TODO: DRY
+        self._threshold_whole_note = 0.73  # TODO: DRY
         self._threshold_half_rest = 0.9  # TODO: DRY
         self._width_resized = 2048
         self._search_step = 0.02
+        self._decode_threshold = 5 / 8  # TODO: DRY
 
         # Read data
         self._img = cv2.imread(self._sheet_img_path, 0)  # grey scale
@@ -29,7 +32,7 @@ class SheetReader:
 
     def _preprocess(self) -> None:
         # Color filter
-        _, self._img = cv2.threshold(self._img, 127, 255, cv2.THRESH_BINARY)
+        _, self._img = cv2.threshold(self._img, 177, 255, cv2.THRESH_BINARY)
 
         # Resize
         scale = self._width_resized / self._img_width
@@ -55,6 +58,7 @@ class SheetReader:
         staff_imgs = load_imgs(staff_dir)
         detector = Detector(self, staff_imgs, self._threshold_staff, is_staff=True)
         self._staff_boxes = detector.detect()
+        self._staff_boxes.sort(key=lambda box: box.y)
         draw_boxes('staff_boxes_img.png', self._img_rgb, self._staff_boxes)
 
     def detect_sharp_sign(self, sharp_sign_dir: str) -> None:
@@ -100,10 +104,38 @@ class SheetReader:
         draw_boxes('half_rest_boxes_img.png', self._img_rgb, self._half_rest_boxes)
 
     def decode(self):
+        # TODO: refactor
         for staff_box in self._staff_boxes:
-            pass
+            quarter_notes = [Note(NoteLength.QUARTER, box, staff_box)
+                for box in self._quarter_note_boxes 
+                if abs(box.center[1] - staff_box.center[1]) < staff_box.h * self._decode_threshold]
+            half_notes = [Note(NoteLength.HALF, box, staff_box)
+                for box in self._half_note_boxes 
+                if abs(box.center[1] - staff_box.center[1]) < staff_box.h * self._decode_threshold]
+            staff_notes = quarter_notes + half_notes
+            staff_notes.sort(key=lambda note: note.x)
+            self._notes += staff_notes
 
+            for note in staff_notes:
+                print('{}  {}'.format(note.pitch, note.length))
+            
+    def output_midi(self) -> None:
+        midi = MIDIFile(1)
 
+        track = 0
+        time = 0
+        channel = 0
+        volume = 100
 
+        midi.addTrackName(track, time, "Track")
+        midi.addTempo(track, time, 240)
 
+        for note in self._notes:
+            duration = note.length.value * 4  # TODO: DRY
+            midi.addNote(track, channel, note.pitch.value, time, duration, volume)
+            time += duration
 
+        midi_file = open('output.mid', 'wb')
+        midi.writeFile(midi_file)
+        midi_file.close()
+        open_file('output.mid')
