@@ -50,6 +50,9 @@ RUN git clone https://github.com/facebookresearch/maskrcnn-benchmark.git \
     && cd maskrcnn-benchmark \
     && python setup.py build develop
 
+# Install SheetMusicAI
+RUN git clone https://github.com/thhuang/SheetMusicAI.git
+
 # Networking
 RUN apt-get update && apt-get install -y \
     openssh-server \
@@ -66,5 +69,5 @@ RUN echo "export VISIBLE=now" >> /etc/profile
 CMD ["/usr/sbin/sshd", "-D"]
 
 # Setup Workspace
-WORKDIR /app
+WORKDIR /SheetMusicAI
 
